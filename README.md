@@ -84,6 +84,20 @@ npm run dev    # http://localhost:5173
 4. Al crear/confirmar/cancelar una reserva se genera una notificación en MongoDB para la otra parte.
 5. Tras una reserva confirmada, el cliente puede dejar una reseña (MongoDB) que se agrega al promedio de calificación de la cancha.
 
+## Pruebas automatizadas
+
+```bash
+# Backend (requiere una base de datos de prueba, ver backend/.env.test)
+cd backend
+npm test        # 12 unit tests + 35 tests de integración (Vitest + Supertest)
+
+# Frontend
+cd frontend
+npm test        # 19 tests de componentes (Vitest + React Testing Library)
+```
+
+Las pruebas de integración corren contra una base de datos Postgres/Mongo real (no mocks) y están pensadas para cubrir sobre todo los casos negativos: credenciales inválidas, roles sin permiso, recursos de otro usuario, reservas solapadas, etc. — no solo el camino feliz.
+
 ## API (resumen)
 
 | Método | Ruta | Descripción |
