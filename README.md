@@ -84,6 +84,16 @@ npm run dev    # http://localhost:5173
 4. Al crear/confirmar/cancelar una reserva se genera una notificación en MongoDB para la otra parte.
 5. Tras una reserva confirmada, el cliente puede dejar una reseña (MongoDB) que se agrega al promedio de calificación de la cancha.
 
+## Despliegue en Render
+
+El repo trae un `render.yaml` (Blueprint) que crea tres recursos: la API (`reservaya-api`), la base de datos PostgreSQL administrada (`reservaya-db`) y el sitio estático del frontend (`reservaya-frontend`).
+
+1. En el dashboard de Render: **New > Blueprint**, apunta al repo y aplica.
+2. MongoDB no tiene servicio administrado en Render — crea un cluster gratuito en [MongoDB Atlas](https://www.mongodb.com/atlas) y pega su connection string en la variable `MONGO_URL` del servicio `reservaya-api` (queda vacía por defecto, hay que completarla a mano en el dashboard).
+3. `CORS_ORIGIN` y `VITE_API_URL` ya vienen apuntando a las URLs por defecto de Render (`reservaya-api.onrender.com` / `reservaya-frontend.onrender.com`); si usas otro nombre de servicio o un dominio propio, actualízalas.
+4. El frontend es una SPA con React Router (rutas como `/iniciar-sesion`, `/canchas/:id`) — el `render.yaml` incluye una regla de rewrite (`/* -> /index.html`) para que esas rutas no den 404 al recargar o entrar por link directo.
+5. Corre `npm run seed --prefix backend` (con `DATABASE_URL` apuntando a la base de Render) si quieres los usuarios de prueba en producción.
+
 ## API (resumen)
 
 | Método | Ruta | Descripción |
