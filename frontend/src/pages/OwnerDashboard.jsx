@@ -73,7 +73,11 @@ function ScheduleEditor({ venue, onSaved }) {
   function toggleDay(d) {
     setDays((prev) => {
       const selected = new Set(prev.selected);
-      selected.has(d) ? selected.delete(d) : selected.add(d);
+      if (selected.has(d)) {
+        selected.delete(d);
+      } else {
+        selected.add(d);
+      }
       return { ...prev, selected };
     });
   }
