@@ -1,7 +1,11 @@
 import 'dotenv/config';
-import app from './app.js';
-import { sequelize } from './models/sql/index.js';
-import { connectMongo } from './config/mongo.js';
+import './instrument.js';
+
+// Import después de instrument.js para que Sentry.init() ya haya corrido
+// antes de que se carguen Express y el resto de la app.
+const { default: app } = await import('./app.js');
+const { sequelize } = await import('./models/sql/index.js');
+const { connectMongo } = await import('./config/mongo.js');
 
 const PORT = process.env.PORT || 4000;
 
