@@ -5,7 +5,7 @@ export default function VenueCard({ venue }) {
   return (
     <Link
       to={`/canchas/${venue.id}`}
-      className="card group overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
+      className="card group overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-[box-shadow,transform] duration-200"
     >
       <div className="aspect-[16/10] overflow-hidden bg-slate-100">
         <img

@@ -11,8 +11,8 @@ export default function Venues() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [venues, setVenues] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState(searchParams.get('search') || '');
-  const [sportType, setSportType] = useState(searchParams.get('sportType') || '');
+  const [search, setSearch] = useState(() => searchParams.get('search') || '');
+  const [sportType, setSportType] = useState(() => searchParams.get('sportType') || '');
 
   useEffect(() => {
     setLoading(true);
@@ -40,12 +40,14 @@ export default function Venues() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Busca por nombre o ubicación..."
+            aria-label="Buscar canchas por nombre o ubicación"
             className="w-full outline-none text-sm text-slate-800"
           />
         </div>
         <select
           value={sportType}
           onChange={(e) => setSportType(e.target.value)}
+          aria-label="Filtrar por deporte"
           className="input sm:w-52"
         >
           <option value="">Todos los deportes</option>

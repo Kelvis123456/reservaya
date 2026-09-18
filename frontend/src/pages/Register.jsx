@@ -40,19 +40,19 @@ export default function Register() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="label">Nombre</label>
-            <input required value={form.name} onChange={(e) => update('name', e.target.value)} className="input" placeholder="Tu nombre" />
+            <label htmlFor="register-name" className="label">Nombre</label>
+            <input id="register-name" required value={form.name} onChange={(e) => update('name', e.target.value)} className="input" placeholder="Tu nombre" />
           </div>
           <div>
-            <label className="label">Email</label>
-            <input type="email" required value={form.email} onChange={(e) => update('email', e.target.value)} className="input" placeholder="tu@email.com" />
+            <label htmlFor="register-email" className="label">Email</label>
+            <input id="register-email" type="email" required value={form.email} onChange={(e) => update('email', e.target.value)} className="input" placeholder="tu@email.com" />
           </div>
           <div>
-            <label className="label">Contraseña</label>
-            <input type="password" required minLength={6} value={form.password} onChange={(e) => update('password', e.target.value)} className="input" placeholder="Mínimo 6 caracteres" />
+            <label htmlFor="register-password" className="label">Contraseña</label>
+            <input id="register-password" type="password" required minLength={6} value={form.password} onChange={(e) => update('password', e.target.value)} className="input" placeholder="Mínimo 6 caracteres" />
           </div>
-          <div>
-            <label className="label">Quiero...</label>
+          <fieldset>
+            <legend className="label">Quiero...</legend>
             <div className="grid grid-cols-2 gap-2">
               {[
                 { value: 'client', label: 'Reservar canchas' },
@@ -61,6 +61,7 @@ export default function Register() {
                 <button
                   type="button"
                   key={opt.value}
+                  aria-pressed={form.role === opt.value}
                   onClick={() => update('role', opt.value)}
                   className={`rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors ${
                     form.role === opt.value
@@ -72,8 +73,8 @@ export default function Register() {
                 </button>
               ))}
             </div>
-          </div>
-          <button disabled={loading} className="btn-primary w-full">
+          </fieldset>
+          <button type="submit" disabled={loading} className="btn-primary w-full">
             {loading ? 'Creando cuenta...' : 'Crear cuenta'}
           </button>
         </form>
