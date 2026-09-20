@@ -45,6 +45,7 @@ export default function Home() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Busca por nombre o ubicación..."
+                aria-label="Buscar canchas por nombre o ubicación"
                 className="w-full outline-none text-slate-800 text-sm"
               />
             </div>

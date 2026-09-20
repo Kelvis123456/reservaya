@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AuthProvider, useAuth } from './AuthContext';
 import api from '../services/api';
+import { getToken, setToken } from '../services/tokenStore';
 
 vi.mock('../services/api', () => ({
   default: { get: vi.fn(), post: vi.fn() },
@@ -30,7 +31,7 @@ function renderHarness() {
 }
 
 beforeEach(() => {
-  localStorage.clear();
+  setToken(null);
   vi.clearAllMocks();
 });
 
@@ -42,8 +43,8 @@ describe('AuthContext', () => {
     expect(api.get).not.toHaveBeenCalled();
   });
 
-  it('con token guardado válido, recupera el usuario vía /auth/me', async () => {
-    localStorage.setItem('reservaya_token', 'un-token');
+  it('con token en memoria válido, recupera el usuario vía /auth/me', async () => {
+    setToken('un-token');
     api.get.mockResolvedValueOnce({ data: { user: { id: 1, email: 'existente@test.com', role: 'client' } } });
 
     renderHarness();
@@ -51,16 +52,16 @@ describe('AuthContext', () => {
   });
 
   it('con token inválido, /auth/me falla y el token se elimina', async () => {
-    localStorage.setItem('reservaya_token', 'token-invalido');
+    setToken('token-invalido');
     api.get.mockRejectedValueOnce(new Error('401'));
 
     renderHarness();
     await waitFor(() => expect(screen.getByTestId('loading')).toHaveTextContent('false'));
     expect(screen.getByTestId('user')).toHaveTextContent('none');
-    expect(localStorage.getItem('reservaya_token')).toBeNull();
+    expect(getToken()).toBeNull();
   });
 
-  it('login exitoso guarda el token y actualiza el usuario', async () => {
+  it('login exitoso guarda el token en memoria y actualiza el usuario', async () => {
     api.post.mockResolvedValueOnce({ data: { token: 'nuevo-token', user: { id: 2, email: 'a@test.com', role: 'client' } } });
     renderHarness();
     await waitFor(() => expect(screen.getByTestId('loading')).toHaveTextContent('false'));
@@ -68,7 +69,7 @@ describe('AuthContext', () => {
     await userEvent.click(screen.getByText('login'));
 
     await waitFor(() => expect(screen.getByTestId('user')).toHaveTextContent('a@test.com'));
-    expect(localStorage.getItem('reservaya_token')).toBe('nuevo-token');
+    expect(getToken()).toBe('nuevo-token');
   });
 
   it('login fallido NO guarda token y el usuario sigue nulo', async () => {
@@ -79,10 +80,10 @@ describe('AuthContext', () => {
     await userEvent.click(screen.getByText('login'));
 
     expect(screen.getByTestId('user')).toHaveTextContent('none');
-    expect(localStorage.getItem('reservaya_token')).toBeNull();
+    expect(getToken()).toBeNull();
   });
 
-  it('logout elimina el token y limpia el usuario', async () => {
+  it('logout elimina el token de memoria y limpia el usuario', async () => {
     api.post.mockResolvedValueOnce({ data: { token: 'nuevo-token', user: { id: 2, email: 'a@test.com', role: 'client' } } });
     renderHarness();
     await waitFor(() => expect(screen.getByTestId('loading')).toHaveTextContent('false'));
@@ -92,6 +93,6 @@ describe('AuthContext', () => {
     await userEvent.click(screen.getByText('logout'));
 
     expect(screen.getByTestId('user')).toHaveTextContent('none');
-    expect(localStorage.getItem('reservaya_token')).toBeNull();
+    expect(getToken()).toBeNull();
   });
 });

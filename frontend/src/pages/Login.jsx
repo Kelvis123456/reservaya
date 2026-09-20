@@ -37,14 +37,14 @@ export default function Login() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="label">Email</label>
-            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="input" placeholder="tu@email.com" />
+            <label htmlFor="login-email" className="label">Email</label>
+            <input id="login-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="input" placeholder="tu@email.com" />
           </div>
           <div>
-            <label className="label">Contraseña</label>
-            <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="input" placeholder="••••••••" />
+            <label htmlFor="login-password" className="label">Contraseña</label>
+            <input id="login-password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="input" placeholder="••••••••" />
           </div>
-          <button disabled={loading} className="btn-primary w-full">
+          <button type="submit" disabled={loading} className="btn-primary w-full">
             {loading ? 'Ingresando...' : 'Ingresar'}
           </button>
         </form>

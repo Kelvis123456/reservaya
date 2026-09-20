@@ -1,5 +1,6 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import api from '../services/api';
+import { getToken, setToken } from '../services/tokenStore';
 
 const AuthContext = createContext(null);
 
@@ -8,41 +9,41 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('reservaya_token');
-    if (!token) {
+    if (!getToken()) {
       setLoading(false);
       return;
     }
     api.get('/auth/me')
       .then(({ data }) => setUser(data.user))
-      .catch(() => localStorage.removeItem('reservaya_token'))
+      .catch(() => setToken(null))
       .finally(() => setLoading(false));
   }, []);
 
   async function login(email, password) {
     const { data } = await api.post('/auth/login', { email, password });
-    localStorage.setItem('reservaya_token', data.token);
+    setToken(data.token);
     setUser(data.user);
     return data.user;
   }
 
   async function register(name, email, password, role) {
     const { data } = await api.post('/auth/register', { name, email, password, role });
-    localStorage.setItem('reservaya_token', data.token);
+    setToken(data.token);
     setUser(data.user);
     return data.user;
   }
 
   function logout() {
-    localStorage.removeItem('reservaya_token');
+    setToken(null);
     setUser(null);
   }
 
-  return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo(
+    () => ({ user, loading, login, register, logout }),
+    [user, loading]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
