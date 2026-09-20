@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { Plus, Pencil, Trash2, CalendarClock, ListChecks, ArrowLeft } from 'lucide-react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -12,6 +12,7 @@ const EMPTY_FORM = { name: '', sportType: 'Fútbol', address: '', description: '
 function VenueForm({ initial, onSubmit, onCancel }) {
   const [form, setForm] = useState(initial || EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const uid = useId();
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -23,34 +24,34 @@ function VenueForm({ initial, onSubmit, onCancel }) {
     <form onSubmit={handleSubmit} className="card p-6 space-y-4">
       <div className="grid sm:grid-cols-2 gap-4">
         <div>
-          <label className="label">Nombre</label>
-          <input required value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} className="input" />
+          <label htmlFor={`${uid}-name`} className="label">Nombre</label>
+          <input id={`${uid}-name`} required value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} className="input" />
         </div>
         <div>
-          <label className="label">Deporte</label>
-          <input required value={form.sportType} onChange={(e) => setForm((f) => ({ ...f, sportType: e.target.value }))} className="input" />
+          <label htmlFor={`${uid}-sport`} className="label">Deporte</label>
+          <input id={`${uid}-sport`} required value={form.sportType} onChange={(e) => setForm((f) => ({ ...f, sportType: e.target.value }))} className="input" />
         </div>
       </div>
       <div>
-        <label className="label">Dirección</label>
-        <input required value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} className="input" />
+        <label htmlFor={`${uid}-address`} className="label">Dirección</label>
+        <input id={`${uid}-address`} required value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} className="input" />
       </div>
       <div>
-        <label className="label">Descripción</label>
-        <textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} className="input min-h-20 resize-none" />
+        <label htmlFor={`${uid}-description`} className="label">Descripción</label>
+        <textarea id={`${uid}-description`} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} className="input min-h-20 resize-none" />
       </div>
       <div className="grid sm:grid-cols-2 gap-4">
         <div>
-          <label className="label">Precio por hora (RD$)</label>
-          <input required type="number" min="0" step="0.01" value={form.pricePerHour} onChange={(e) => setForm((f) => ({ ...f, pricePerHour: e.target.value }))} className="input" />
+          <label htmlFor={`${uid}-price`} className="label">Precio por hora (RD$)</label>
+          <input id={`${uid}-price`} required type="number" min="0" step="0.01" value={form.pricePerHour} onChange={(e) => setForm((f) => ({ ...f, pricePerHour: e.target.value }))} className="input" />
         </div>
         <div>
-          <label className="label">URL de imagen</label>
-          <input value={form.imageUrl} onChange={(e) => setForm((f) => ({ ...f, imageUrl: e.target.value }))} className="input" placeholder="https://..." />
+          <label htmlFor={`${uid}-image`} className="label">URL de imagen</label>
+          <input id={`${uid}-image`} value={form.imageUrl} onChange={(e) => setForm((f) => ({ ...f, imageUrl: e.target.value }))} className="input" placeholder="https://..." />
         </div>
       </div>
       <div className="flex gap-2 pt-2">
-        <button disabled={saving} className="btn-primary">{saving ? 'Guardando...' : 'Guardar'}</button>
+        <button type="submit" disabled={saving} className="btn-primary">{saving ? 'Guardando...' : 'Guardar'}</button>
         <button type="button" onClick={onCancel} className="btn-secondary">Cancelar</button>
       </div>
     </form>
@@ -58,6 +59,7 @@ function VenueForm({ initial, onSubmit, onCancel }) {
 }
 
 function ScheduleEditor({ venue, onSaved }) {
+  const uid = useId();
   const [days, setDays] = useState(() => {
     const active = new Set(venue.schedules?.map((s) => s.dayOfWeek));
     const first = venue.schedules?.[0];
@@ -115,14 +117,14 @@ function ScheduleEditor({ venue, onSaved }) {
       </div>
       <div className="flex flex-wrap gap-4 items-end">
         <div>
-          <label className="label">Hora de apertura</label>
-          <input type="time" value={days.openTime} onChange={(e) => setDays((d) => ({ ...d, openTime: e.target.value }))} className="input w-36" />
+          <label htmlFor={`${uid}-open`} className="label">Hora de apertura</label>
+          <input id={`${uid}-open`} type="time" value={days.openTime} onChange={(e) => setDays((d) => ({ ...d, openTime: e.target.value }))} className="input w-36" />
         </div>
         <div>
-          <label className="label">Hora de cierre</label>
-          <input type="time" value={days.closeTime} onChange={(e) => setDays((d) => ({ ...d, closeTime: e.target.value }))} className="input w-36" />
+          <label htmlFor={`${uid}-close`} className="label">Hora de cierre</label>
+          <input id={`${uid}-close`} type="time" value={days.closeTime} onChange={(e) => setDays((d) => ({ ...d, closeTime: e.target.value }))} className="input w-36" />
         </div>
-        <button onClick={save} disabled={saving} className="btn-primary">{saving ? 'Guardando...' : 'Guardar horario'}</button>
+        <button type="button" onClick={save} disabled={saving} className="btn-primary">{saving ? 'Guardando...' : 'Guardar horario'}</button>
       </div>
     </div>
   );
@@ -286,15 +288,15 @@ export default function OwnerDashboard() {
                       <p className="text-sm text-slate-500">{v.address}</p>
                     </div>
                     <div className="flex gap-1 shrink-0">
-                      <button onClick={() => setEditingId(v.id)} className="p-2 rounded-lg hover:bg-slate-100 text-slate-500">
+                      <button type="button" onClick={() => setEditingId(v.id)} aria-label={`Editar ${v.name}`} className="p-2 rounded-lg hover:bg-slate-100 text-slate-500">
                         <Pencil className="size-4" />
                       </button>
-                      <button onClick={() => deleteVenue(v.id)} className="p-2 rounded-lg hover:bg-red-50 text-red-500">
+                      <button type="button" onClick={() => deleteVenue(v.id)} aria-label={`Eliminar ${v.name}`} className="p-2 rounded-lg hover:bg-red-50 text-red-500">
                         <Trash2 className="size-4" />
                       </button>
                     </div>
                   </div>
-                  <button onClick={() => setSelectedId(v.id)} className="btn-secondary w-full mt-4">
+                  <button type="button" onClick={() => setSelectedId(v.id)} className="btn-secondary w-full mt-4">
                     Gestionar horario y reservas
                   </button>
                 </>

@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useState } from 'react';
+import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { CheckCircle2, XCircle, X } from 'lucide-react';
 
 const ToastContext = createContext(null);
@@ -17,8 +17,10 @@ export function ToastProvider({ children }) {
     setTimeout(() => remove(id), 4000);
   }, [remove]);
 
+  const value = useMemo(() => ({ push }), [push]);
+
   return (
-    <ToastContext.Provider value={{ push }}>
+    <ToastContext.Provider value={value}>
       {children}
       <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 w-[calc(100%-2rem)] max-w-sm">
         {toasts.map((t) => (
@@ -34,7 +36,7 @@ export function ToastProvider({ children }) {
               <CheckCircle2 className="size-5 text-brand-600 shrink-0 mt-0.5" />
             )}
             <p className="text-sm text-slate-700 flex-1">{t.message}</p>
-            <button onClick={() => remove(t.id)} className="text-slate-400 hover:text-slate-600">
+            <button type="button" onClick={() => remove(t.id)} aria-label="Cerrar notificación" className="text-slate-400 hover:text-slate-600">
               <X className="size-4" />
             </button>
           </div>

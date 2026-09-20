@@ -18,7 +18,7 @@ export default function VenueDetail() {
 
   const [venue, setVenue] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [date, setDate] = useState(todayISO());
+  const [date, setDate] = useState(() => todayISO());
   const [slots, setSlots] = useState([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [booking, setBooking] = useState(null);
@@ -108,6 +108,7 @@ export default function VenueDetail() {
           </h2>
           <input
             type="date"
+            aria-label="Fecha de disponibilidad"
             value={date}
             min={todayISO()}
             onChange={(e) => setDate(e.target.value)}
@@ -148,9 +149,10 @@ export default function VenueDetail() {
                 value={reviewForm.comment}
                 onChange={(e) => setReviewForm((f) => ({ ...f, comment: e.target.value }))}
                 placeholder="Cuéntanos tu experiencia..."
+                aria-label="Comentario de tu reseña"
                 className="input min-h-20 resize-none"
               />
-              <button disabled={submittingReview} className="btn-primary">
+              <button type="submit" disabled={submittingReview} className="btn-primary">
                 {submittingReview ? 'Publicando...' : 'Publicar reseña'}
               </button>
             </form>
