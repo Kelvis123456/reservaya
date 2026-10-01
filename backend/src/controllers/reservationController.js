@@ -1,49 +1,62 @@
 import sequelize from '../config/postgres.js';
-import { Reservation, Venue } from '../models/sql/index.js';
+import { Reservation, Venue, Schedule, User } from '../models/sql/index.js';
 import Notification from '../models/nosql/Notification.js';
-import { rangesOverlap } from '../utils/availability.js';
+import { rangesOverlap, bookingError, dayOfWeekOf, hoursBetween, nowIn, VENUE_TZ } from '../utils/availability.js';
 
+// Se llama después del commit: la reserva ya quedó guardada, así que una falla de Mongo
+// no puede convertirse en un error para el usuario (antes el rollback sobre una transacción
+// ya commiteada tiraba otra excepción que dejaba la request colgada o tumbaba el proceso).
 async function notify(userId, type, message, metadata = {}) {
-  await Notification.create({ userId, type, message, metadata });
+  try {
+    await Notification.create({ userId, type, message, metadata });
+  } catch (err) {
+    console.error('No se pudo crear la notificación', type, err.message);
+  }
+}
+
+async function rollback(t) {
+  if (!t.finished) await t.rollback();
+}
+
+/** Otra reserva activa (pending/confirmed) que pisa el mismo horario, excluyendo `exceptId`. */
+async function findOverlap({ venueId, date, startTime, endTime }, t, exceptId = null) {
+  const sameDay = await Reservation.findAll({ where: { venueId, date }, transaction: t, lock: t.LOCK.UPDATE });
+  return sameDay.find(
+    (r) => r.id !== exceptId && r.status !== 'cancelled' && rangesOverlap(startTime, endTime, r.startTime, r.endTime)
+  );
 }
 
 export async function createReservation(req, res, next) {
-  const t = await sequelize.transaction();
+  let t;
   try {
     const { venueId, date, startTime, endTime } = req.body;
     if (!venueId || !date || !startTime || !endTime) {
-      await t.rollback();
       return res.status(400).json({ message: 'Faltan campos obligatorios' });
     }
 
+    t = await sequelize.transaction();
+    // El lock de la cancha serializa las reservas concurrentes de la misma cancha.
     const venue = await Venue.findByPk(venueId, { transaction: t, lock: t.LOCK.UPDATE });
     if (!venue) {
-      await t.rollback();
+      await rollback(t);
       return res.status(404).json({ message: 'Cancha no encontrada' });
     }
 
-    // Bloqueamos las filas de reservas de esa cancha/fecha para evitar condiciones de carrera
-    // y verificamos que el horario solicitado no se solape con una reserva activa existente.
-    const sameDay = await Reservation.findAll({
-      where: { venueId, date },
-      transaction: t,
-      lock: t.LOCK.UPDATE,
-    });
-    const overlaps = sameDay.some(
-      (r) => r.status !== 'cancelled' && rangesOverlap(startTime, endTime, r.startTime, r.endTime)
-    );
-    if (overlaps) {
-      await t.rollback();
+    const schedule = await Schedule.findOne({ where: { venueId, dayOfWeek: dayOfWeekOf(date) }, transaction: t });
+    const invalid = bookingError({ date, startTime, endTime }, schedule);
+    if (invalid) {
+      await rollback(t);
+      return res.status(400).json({ message: invalid });
+    }
+
+    if (await findOverlap({ venueId, date, startTime, endTime }, t)) {
+      await rollback(t);
       return res.status(409).json({ message: 'Ese horario ya está reservado' });
     }
 
-    const [openH, openM] = startTime.split(':').map(Number);
-    const [closeH, closeM] = endTime.split(':').map(Number);
-    const hours = (closeH * 60 + closeM - (openH * 60 + openM)) / 60;
-    const totalPrice = Number(venue.pricePerHour) * hours;
-
     const reservation = await Reservation.create({
-      venueId, date, startTime, endTime, totalPrice,
+      venueId, date, startTime, endTime,
+      totalPrice: Number(venue.pricePerHour) * hoursBetween(startTime, endTime),
       userId: req.user.id,
       status: 'pending',
     }, { transaction: t });
@@ -59,7 +72,7 @@ export async function createReservation(req, res, next) {
 
     res.status(201).json(reservation);
   } catch (err) {
-    await t.rollback();
+    if (t) await rollback(t).catch(() => {});
     next(err);
   }
 }
@@ -85,8 +98,10 @@ export async function venueReservations(req, res, next) {
       return res.status(403).json({ message: 'No eres el dueño de esta cancha' });
     }
 
+    // el dueño necesita saber quién reservó para confirmar o contactarlo
     const reservations = await Reservation.findAll({
       where: { venueId: venue.id },
+      include: [{ model: User, as: 'user', attributes: ['id', 'name', 'email'] }],
       order: [['date', 'DESC'], ['startTime', 'DESC']],
     });
     res.json(reservations);
@@ -96,27 +111,45 @@ export async function venueReservations(req, res, next) {
 }
 
 export async function confirmReservation(req, res, next) {
+  let t;
   try {
-    const reservation = await Reservation.findByPk(req.params.id, {
-      include: [{ model: Venue, as: 'venue' }],
-    });
-    if (!reservation) return res.status(404).json({ message: 'Reserva no encontrada' });
-    if (reservation.venue.ownerId !== req.user.id) {
+    t = await sequelize.transaction();
+    const reservation = await Reservation.findByPk(req.params.id, { transaction: t, lock: t.LOCK.UPDATE });
+    if (!reservation) {
+      await rollback(t);
+      return res.status(404).json({ message: 'Reserva no encontrada' });
+    }
+    // Mismo lock que al crear: así no se cruza con una reserva nueva del mismo horario.
+    const venue = await Venue.findByPk(reservation.venueId, { transaction: t, lock: t.LOCK.UPDATE });
+    if (venue.ownerId !== req.user.id) {
+      await rollback(t);
       return res.status(403).json({ message: 'No eres el dueño de esta cancha' });
+    }
+    // Solo pending -> confirmed. Antes se podía "confirmar" una reserva ya cancelada
+    // (por ejemplo desde un panel abierto hace rato) y quedaba doble reserva del horario.
+    if (reservation.status !== 'pending') {
+      await rollback(t);
+      return res.status(409).json({ message: `La reserva ya está ${reservation.status === 'confirmed' ? 'confirmada' : 'cancelada'}` });
+    }
+    if (await findOverlap(reservation, t, reservation.id)) {
+      await rollback(t);
+      return res.status(409).json({ message: 'Ese horario ya está tomado por otra reserva' });
     }
 
     reservation.status = 'confirmed';
-    await reservation.save();
+    await reservation.save({ transaction: t });
+    await t.commit();
 
     await notify(
       reservation.userId,
       'reservation_confirmed',
-      `Tu reserva para "${reservation.venue.name}" el ${reservation.date} fue confirmada`,
+      `Tu reserva para "${venue.name}" el ${reservation.date} fue confirmada`,
       { reservationId: reservation.id }
     );
 
-    res.json(reservation);
+    res.json({ ...reservation.toJSON(), venue: venue.toJSON() });
   } catch (err) {
+    if (t) await rollback(t).catch(() => {});
     next(err);
   }
 }
@@ -132,6 +165,12 @@ export async function cancelReservation(req, res, next) {
     const isVenueOwner = reservation.venue.ownerId === req.user.id;
     if (!isClient && !isVenueOwner) {
       return res.status(403).json({ message: 'No puedes cancelar esta reserva' });
+    }
+    if (reservation.status === 'cancelled') {
+      return res.status(409).json({ message: 'La reserva ya está cancelada' });
+    }
+    if (reservation.date < nowIn(VENUE_TZ).date) {
+      return res.status(409).json({ message: 'No se puede cancelar una reserva que ya pasó' });
     }
 
     reservation.status = 'cancelled';

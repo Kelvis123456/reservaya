@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { rangesOverlap, buildDaySlots } from './availability.js';
+import { rangesOverlap, buildDaySlots, bookingError, isValidDate, dayOfWeekOf, nowIn } from './availability.js';
 
 describe('rangesOverlap', () => {
   it('detecta solapamiento total', () => {
@@ -66,5 +66,71 @@ describe('buildDaySlots', () => {
     const oddSchedule = { openTime: '08:00', closeTime: '10:30' };
     const slots = buildDaySlots(oddSchedule, []);
     expect(slots.map((s) => s.startTime)).toEqual(['08:00', '09:00']);
+  });
+});
+
+describe('nowIn', () => {
+  it('usa la hora de Santo Domingo, no UTC (a las 21:00 locales UTC ya es mañana)', () => {
+    // 2026-10-02T01:30Z = 2026-10-01 21:30 en America/Santo_Domingo (UTC-4)
+    expect(nowIn('America/Santo_Domingo', new Date('2026-10-02T01:30:00Z'))).toEqual({ date: '2026-10-01', minutes: 21 * 60 + 30 });
+  });
+});
+
+describe('isValidDate / dayOfWeekOf', () => {
+  it('rechaza fechas que no existen o con otro formato', () => {
+    expect(isValidDate('2026-02-30')).toBe(false);
+    expect(isValidDate('2026-13-01')).toBe(false);
+    expect(isValidDate('01/10/2026')).toBe(false);
+    expect(isValidDate('2026-10-01')).toBe(true);
+  });
+
+  it('calcula el día de la semana sin depender de la zona del servidor', () => {
+    expect(dayOfWeekOf('2026-10-04')).toBe(0); // domingo
+    expect(dayOfWeekOf('2026-10-01')).toBe(4); // jueves
+  });
+});
+
+describe('bookingError', () => {
+  const schedule = { openTime: '08:00', closeTime: '22:00' };
+  // "ahora" = 2026-10-01 10:30 en Santo Domingo
+  const now = new Date('2026-10-01T14:30:00Z');
+  const ok = { date: '2026-10-02', startTime: '18:00', endTime: '19:00' };
+
+  it('acepta un bloque válido en el futuro', () => {
+    expect(bookingError(ok, schedule, now)).toBeNull();
+    expect(bookingError({ ...ok, startTime: '20:00', endTime: '22:00' }, schedule, now)).toBeNull();
+  });
+
+  it('rechaza horas al revés y de duración cero (antes daban precio negativo o gratis)', () => {
+    expect(bookingError({ ...ok, startTime: '20:00', endTime: '18:00' }, schedule, now)).toMatch(/posterior/);
+    expect(bookingError({ ...ok, startTime: '10:00', endTime: '10:00' }, schedule, now)).toMatch(/posterior/);
+  });
+
+  it('rechaza horas fuera de rango o mal formadas', () => {
+    expect(bookingError({ ...ok, startTime: '99:99' }, schedule, now)).toMatch(/HH:MM/);
+    expect(bookingError({ ...ok, endTime: '24:00' }, schedule, now)).toMatch(/HH:MM/);
+  });
+
+  it('rechaza reservar fuera del horario de la cancha', () => {
+    expect(bookingError({ ...ok, startTime: '00:00', endTime: '23:00' }, schedule, now)).toMatch(/Fuera del horario/);
+    expect(bookingError({ ...ok, startTime: '21:00', endTime: '23:00' }, schedule, now)).toMatch(/Fuera del horario/);
+  });
+
+  it('rechaza bloques que no calzan con la grilla de 1 hora', () => {
+    expect(bookingError({ ...ok, startTime: '10:30', endTime: '11:30' }, schedule, now)).toMatch(/bloques/);
+  });
+
+  it('rechaza un día en que la cancha no abre', () => {
+    expect(bookingError(ok, undefined, now)).toMatch(/no abre/);
+  });
+
+  it('rechaza fechas pasadas y horas de hoy que ya empezaron', () => {
+    expect(bookingError({ ...ok, date: '2026-09-30' }, schedule, now)).toMatch(/pasó/);
+    expect(bookingError({ ...ok, date: '2026-10-01', startTime: '10:00', endTime: '11:00' }, schedule, now)).toMatch(/pasó/);
+    expect(bookingError({ ...ok, date: '2026-10-01', startTime: '11:00', endTime: '12:00' }, schedule, now)).toBeNull();
+  });
+
+  it('rechaza una fecha imposible en vez de dejar que Postgres responda 500', () => {
+    expect(bookingError({ ...ok, date: '2026-02-30' }, schedule, now)).toMatch(/fecha/);
   });
 });
