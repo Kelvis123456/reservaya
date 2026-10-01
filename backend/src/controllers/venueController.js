@@ -1,7 +1,8 @@
 import { Op } from 'sequelize';
 import { Venue, Schedule, Reservation, User } from '../models/sql/index.js';
 import Review from '../models/nosql/Review.js';
-import { buildDaySlots } from '../utils/availability.js';
+import sequelize from '../config/postgres.js';
+import { buildDaySlots, dayOfWeekOf, isValidDate, isValidTime, nowIn, VENUE_TZ } from '../utils/availability.js';
 
 async function attachRatings(venues) {
   const ids = venues.map((v) => v.id);
@@ -36,7 +37,12 @@ export async function listVenues(req, res, next) {
 
     const venues = await Venue.findAll({
       where,
-      include: [{ model: User, as: 'owner', attributes: ['id', 'name'] }],
+      // schedules: el panel del dueño edita el horario desde esta lista; sin ellos el editor
+      // abría vacío y al guardar borraba todos los días que ya estaban configurados.
+      include: [
+        { model: User, as: 'owner', attributes: ['id', 'name'] },
+        { model: Schedule, as: 'schedules' },
+      ],
       order: [['createdAt', 'DESC']],
     });
 
@@ -66,7 +72,8 @@ export async function getVenue(req, res, next) {
 export async function createVenue(req, res, next) {
   try {
     const { name, sportType, address, description, pricePerHour, imageUrl } = req.body;
-    if (!name || !sportType || !address || !pricePerHour) {
+    // pricePerHour puede ser 0 (cancha gratis), así que no alcanza con !pricePerHour
+    if (!name || !sportType || !address || pricePerHour === undefined || pricePerHour === null || pricePerHour === '') {
       return res.status(400).json({ message: 'Faltan campos obligatorios' });
     }
 
@@ -105,11 +112,32 @@ export async function deleteVenue(req, res, next) {
     const { venue, error, message } = await findOwnedVenue(req.params.id, req.user.id);
     if (error) return res.status(error).json({ message });
 
+    // El borrado arrastra (CASCADE) todas sus reservas: si hay alguna por venir, los
+    // clientes la perderían sin aviso. Primero hay que cancelarlas.
+    const upcoming = await Reservation.count({
+      where: { venueId: venue.id, status: { [Op.ne]: 'cancelled' }, date: { [Op.gte]: nowIn(VENUE_TZ).date } },
+    });
+    if (upcoming > 0) {
+      return res.status(409).json({ message: `La cancha tiene ${upcoming} reserva(s) por venir. Cancélalas antes de borrarla.` });
+    }
+
     await venue.destroy();
     res.status(204).send();
   } catch (err) {
     next(err);
   }
+}
+
+function scheduleError(schedules) {
+  const seen = new Set();
+  for (const s of schedules) {
+    if (!s || !Number.isInteger(s.dayOfWeek) || s.dayOfWeek < 0 || s.dayOfWeek > 6) return 'dayOfWeek debe ser un entero de 0 (domingo) a 6';
+    if (seen.has(s.dayOfWeek)) return 'Cada día puede aparecer una sola vez';
+    seen.add(s.dayOfWeek);
+    if (!isValidTime(s.openTime) || !isValidTime(s.closeTime)) return 'Las horas deben tener formato HH:MM';
+    if (s.openTime >= s.closeTime) return 'La hora de cierre debe ser posterior a la de apertura';
+  }
+  return null;
 }
 
 export async function setSchedule(req, res, next) {
@@ -121,11 +149,18 @@ export async function setSchedule(req, res, next) {
     if (!Array.isArray(schedules)) {
       return res.status(400).json({ message: 'schedules debe ser un arreglo' });
     }
+    const invalid = scheduleError(schedules);
+    if (invalid) return res.status(400).json({ message: invalid });
 
-    await Schedule.destroy({ where: { venueId: venue.id } });
-    const created = await Schedule.bulkCreate(
-      schedules.map((s) => ({ ...s, venueId: venue.id }))
-    );
+    // Todo o nada: antes un día inválido fallaba después del destroy y la cancha
+    // quedaba sin ningún horario.
+    const created = await sequelize.transaction(async (t) => {
+      await Schedule.destroy({ where: { venueId: venue.id }, transaction: t });
+      return Schedule.bulkCreate(
+        schedules.map(({ dayOfWeek, openTime, closeTime }) => ({ dayOfWeek, openTime, closeTime, venueId: venue.id })),
+        { transaction: t }
+      );
+    });
     res.json(created);
   } catch (err) {
     next(err);
@@ -135,16 +170,22 @@ export async function setSchedule(req, res, next) {
 export async function getAvailability(req, res, next) {
   try {
     const { date } = req.query;
-    if (!date) return res.status(400).json({ message: 'Debes indicar una fecha (date=YYYY-MM-DD)' });
+    if (!isValidDate(date)) return res.status(400).json({ message: 'Debes indicar una fecha válida (date=YYYY-MM-DD)' });
 
     const venue = await Venue.findByPk(req.params.id, { include: [{ model: Schedule, as: 'schedules' }] });
     if (!venue) return res.status(404).json({ message: 'Cancha no encontrada' });
 
-    const dayOfWeek = new Date(`${date}T00:00:00`).getDay();
+    const dayOfWeek = dayOfWeekOf(date);
     const schedule = venue.schedules.find((s) => s.dayOfWeek === dayOfWeek);
 
     const reservations = await Reservation.findAll({ where: { venueId: venue.id, date } });
-    const slots = buildDaySlots(schedule, reservations);
+    // Hoy (en Santo Domingo), los bloques que ya empezaron no se pueden reservar.
+    const now = nowIn(VENUE_TZ);
+    const slots = buildDaySlots(schedule, reservations).map((slot) => {
+      const [h, m] = slot.startTime.split(':').map(Number);
+      const past = date < now.date || (date === now.date && h * 60 + m <= now.minutes);
+      return past ? { ...slot, available: false, past: true } : slot;
+    });
 
     res.json({ date, slots });
   } catch (err) {
