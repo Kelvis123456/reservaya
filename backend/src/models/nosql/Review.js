@@ -14,4 +14,7 @@ const reviewSchema = new Schema({
   ownerReply: { type: String, default: null },
 }, { timestamps: true });
 
+// Una reseña por cliente y cancha: frena que alguien hunda el promedio de un competidor.
+reviewSchema.index({ venueId: 1, userId: 1 }, { unique: true });
+
 export default model('Review', reviewSchema);
