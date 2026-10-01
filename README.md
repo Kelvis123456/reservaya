@@ -100,13 +100,15 @@ Las pruebas de integración corren contra una base de datos Postgres/Mongo real 
 
 ## Despliegue en Render
 
+Demo en vivo: https://reservaya-frontend.onrender.com (el plan gratis duerme el API; la primera carga puede tardar hasta un minuto). Cuentas demo en la pantalla de login.
+
 El repo trae un `render.yaml` (Blueprint) que crea tres recursos: la API (`reservaya-api`), la base de datos PostgreSQL administrada (`reservaya-db`) y el sitio estático del frontend (`reservaya-frontend`).
 
 1. En el dashboard de Render: **New > Blueprint**, apunta al repo y aplica.
 2. MongoDB no tiene servicio administrado en Render — crea un cluster gratuito en [MongoDB Atlas](https://www.mongodb.com/atlas) y pega su connection string en la variable `MONGO_URL` del servicio `reservaya-api` (queda vacía por defecto, hay que completarla a mano en el dashboard).
-3. `CORS_ORIGIN` y `VITE_API_URL` ya vienen apuntando a las URLs por defecto de Render (`reservaya-api.onrender.com` / `reservaya-frontend.onrender.com`); si usas otro nombre de servicio o un dominio propio, actualízalas.
+3. Los subdominios de Render son globales: si el nombre ya está tomado, Render le agrega un sufijo al servicio (el API de este repo quedó como `reservaya-api-6h48.onrender.com`; `reservaya-api.onrender.com` es de otra persona). Revisa la URL real de tus servicios y ajusta `VITE_API_URL` y `CORS_ORIGIN` en `render.yaml`.
 4. El frontend es una SPA con React Router (rutas como `/iniciar-sesion`, `/canchas/:id`) — el `render.yaml` incluye una regla de rewrite (`/* -> /index.html`) para que esas rutas no den 404 al recargar o entrar por link directo.
-5. Corre `npm run seed --prefix backend` (con `DATABASE_URL` apuntando a la base de Render) si quieres los usuarios de prueba en producción.
+5. Para tener los datos demo en producción, deja `SEED_DEMO_IF_EMPTY=true` en el API (ya viene en `render.yaml`): al arrancar, siembra canchas y cuentas de prueba solo si la base está vacía. `npm run seed` borra todas las tablas y por eso se niega a correr con `NODE_ENV=production`.
 
 ## API (resumen)
 
