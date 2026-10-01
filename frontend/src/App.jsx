@@ -9,12 +9,15 @@ import MyBookings from './pages/MyBookings';
 import OwnerDashboard from './pages/OwnerDashboard';
 import NotFound from './pages/NotFound';
 import ProtectedRoute from './components/ProtectedRoute';
+import ColdStartNotice from './components/ColdStartNotice';
 
 export default function App() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-svh flex flex-col">
       <Navbar />
-      <main className="flex-1">
+      <ColdStartNotice />
+      {/* pb-16: deja lugar a la barra de pestañas de abajo en el celular */}
+      <main className="flex-1 pb-16 sm:pb-0">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/iniciar-sesion" element={<Login />} />
