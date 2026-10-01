@@ -10,7 +10,7 @@ services:
     plan: free
     region: oregon
     rootDir: backend
-    buildCommand: npm install
+    buildCommand: npm ci
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:
@@ -28,16 +28,21 @@ services:
         value: 7d
       - key: CORS_ORIGIN
         value: https://reservaya-frontend.onrender.com
+      # el demo del portfolio necesita datos; solo siembra si la base está vacía
+      - key: SEED_DEMO_IF_EMPTY
+        value: "true"
 
   - type: web
     name: reservaya-frontend
     runtime: static
     rootDir: frontend
-    buildCommand: npm install && npm run build
+    buildCommand: npm ci && npm run build
     staticPublishPath: dist
     envVars:
+      # el nombre "reservaya-api" ya estaba tomado en Render y el servicio quedó con sufijo;
+      # reservaya-api.onrender.com es la app de otra persona
       - key: VITE_API_URL
-        value: https://reservaya-api.onrender.com/api
+        value: https://reservaya-api-6h48.onrender.com/api
     routes:
       - type: rewrite
         source: /*
