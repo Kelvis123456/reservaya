@@ -72,17 +72,19 @@ body {
     @apply block text-sm font-medium text-slate-600 mb-1.5;
   }
 
-  /* entra desde abajo y se va por el mismo lado (ToastContext pone data-leaving) */
+  /* entra y se va por el mismo lado (ToastContext pone data-leaving). En el celular los
+     toasts van arriba (abajo están las pestañas y el resumen de reserva), en desktop abajo:
+     un desplazamiento corto sirve para las dos posiciones. */
   .toast {
     transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out);
     @starting-style {
       opacity: 0;
-      transform: translateY(100%);
+      transform: translateY(0.5rem);
     }
   }
   .toast[data-leaving] {
     opacity: 0;
-    transform: translateY(100%);
+    transform: translateY(0.5rem);
   }
 
   /* menús que nacen de su botón (campana): crecen desde esa esquina; cierran sin animación */
