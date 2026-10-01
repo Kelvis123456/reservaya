@@ -32,7 +32,7 @@ export default function Register() {
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
       <div className="card w-full max-w-sm p-7">
-        <div className="size-11 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center mb-4">
+        <div className="size-11 rounded-xl bg-brand-50 text-brand-700 flex items-center justify-center mb-4">
           <UserPlus className="size-5" />
         </div>
         <h1 className="text-xl font-bold text-slate-900">Crea tu cuenta</h1>
@@ -80,7 +80,7 @@ export default function Register() {
         </form>
 
         <p className="text-sm text-slate-500 mt-5 text-center">
-          ¿Ya tienes cuenta? <Link to="/iniciar-sesion" className="text-brand-600 font-medium hover:text-brand-700">Inicia sesión</Link>
+          ¿Ya tienes cuenta? <Link to="/iniciar-sesion" className="text-brand-700 font-medium hover:text-brand-800">Inicia sesión</Link>
         </p>
       </div>
     </div>

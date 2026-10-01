@@ -7,8 +7,11 @@ let idCounter = 0;
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
 
+  // Primero se marca como saliendo (la clase .toast lo anima hacia abajo) y se quita
+  // del DOM cuando terminó la transición.
   const remove = useCallback((id) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
+    setToasts((prev) => prev.map((t) => (t.id === id ? { ...t, leaving: true } : t)));
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 200);
   }, []);
 
   const push = useCallback((message, type = 'success') => {
@@ -22,21 +25,22 @@ export function ToastProvider({ children }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 w-[calc(100%-2rem)] max-w-sm">
+      <div role="status" aria-live="polite" className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] right-4 z-50 flex flex-col gap-2 w-[calc(100%-2rem)] max-w-sm">
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`card flex items-start gap-2.5 px-4 py-3 shadow-lg animate-[fadeIn_0.2s_ease-out] ${
+            data-leaving={t.leaving || undefined}
+            className={`card toast flex items-start gap-2.5 px-4 py-3 shadow-lg ${
               t.type === 'error' ? 'border-red-200' : 'border-brand-200'
             }`}
           >
             {t.type === 'error' ? (
               <XCircle className="size-5 text-red-500 shrink-0 mt-0.5" />
             ) : (
-              <CheckCircle2 className="size-5 text-brand-600 shrink-0 mt-0.5" />
+              <CheckCircle2 className="size-5 text-brand-700 shrink-0 mt-0.5" />
             )}
             <p className="text-sm text-slate-700 flex-1">{t.message}</p>
-            <button type="button" onClick={() => remove(t.id)} aria-label="Cerrar notificación" className="text-slate-400 hover:text-slate-600">
+            <button type="button" onClick={() => remove(t.id)} aria-label="Cerrar notificación" className="text-slate-500 hover:text-slate-600">
               <X className="size-4" />
             </button>
           </div>

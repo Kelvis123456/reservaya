@@ -1,7 +1,7 @@
 const STYLES = {
   pending: 'bg-amber-50 text-amber-700 border-amber-200',
   confirmed: 'bg-brand-50 text-brand-700 border-brand-200',
-  cancelled: 'bg-red-50 text-red-600 border-red-200',
+  cancelled: 'bg-red-50 text-red-700 border-red-200',
 };
 
 const LABELS = {
