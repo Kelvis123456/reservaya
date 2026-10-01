@@ -122,3 +122,12 @@ El repo trae un `render.yaml` (Blueprint) que crea tres recursos: la API (`reser
 | PATCH | `/api/reservations/:id/confirm` \| `/cancel` | Confirmar/cancelar reserva |
 | POST | `/api/reviews` | Dejar reseña (requiere reserva confirmada) |
 | GET | `/api/notifications/me` | Notificaciones del usuario |
+
+## Privacidad
+
+Es un proyecto académico con cuentas de demostración, pero sí guarda datos reales si alguien se registra:
+
+- **Qué se guarda:** nombre, correo, rol y contraseña (solo el hash, nunca en texto plano) en PostgreSQL; reservas, reseñas y notificaciones asociadas a la cuenta.
+- **Para qué:** solo para que la app funcione (iniciar sesión, reservar, reseñar). No hay publicidad ni analítica de terceros.
+- **Quién más lo recibe:** Render aloja la API y la base de datos, MongoDB Atlas guarda reseñas y notificaciones, y Sentry recibe reportes de errores si `SENTRY_DSN` / `VITE_SENTRY_DSN` están configuradas (en el backend sin variables locales, para que una contraseña no viaje en un error).
+- **Borrar tus datos:** escríbeme a kelvisguerrero03@gmail.com y elimino la cuenta y sus datos. La demo en Render se puede reiniciar o borrar en cualquier momento, así que no uses un correo o una contraseña que te importen.
