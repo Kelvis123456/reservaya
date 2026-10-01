@@ -5,13 +5,13 @@ export default function VenueCard({ venue }) {
   return (
     <Link
       to={`/canchas/${venue.id}`}
-      className="card group overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-[box-shadow,transform] duration-200"
+      className="card group motion-lift overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-[box-shadow,transform] duration-200 ease-(--ease-out) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
     >
       <div className="aspect-[16/10] overflow-hidden bg-slate-100">
         <img
           src={venue.imageUrl || 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800'}
           alt={venue.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200 ease-(--ease-out)"
         />
       </div>
       <div className="p-4">
@@ -22,7 +22,7 @@ export default function VenueCard({ venue }) {
           {venue.avgRating != null && (
             <span className="flex items-center gap-1 text-sm text-slate-600">
               <Star className="size-3.5 fill-amber-400 text-amber-400" />
-              {venue.avgRating} <span className="text-slate-400">({venue.reviewCount})</span>
+              {venue.avgRating} <span className="text-slate-500">({venue.reviewCount})</span>
             </span>
           )}
         </div>

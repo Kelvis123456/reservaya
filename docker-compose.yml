@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: reservaya
       POSTGRES_DB: reservaya
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432" # solo local: sin esto Postgres queda abierto en la red (wifi de un café)
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -17,7 +17,7 @@ services:
     container_name: reservaya-mongo
     restart: unless-stopped
     ports:
-      - "27017:27017"
+      - "127.0.0.1:27017:27017" # Mongo no tiene usuario ni contraseña acá
     volumes:
       - mongo_data:/data/db
 

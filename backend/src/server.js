@@ -18,6 +18,17 @@ async function start() {
 
   await connectMongo();
 
+  // Puebla con los datos demo solo si la base está vacía (el plan gratis de Render no da
+  // shell para correr el seed, y el demo del portfolio necesita canchas y cuentas).
+  if (process.env.SEED_DEMO_IF_EMPTY === 'true') {
+    const { User } = await import('./models/sql/index.js');
+    if ((await User.count()) === 0) {
+      const { insertDemoData } = await import('./demoData.js');
+      await insertDemoData();
+      console.log('Base vacía: datos demo creados');
+    }
+  }
+
   app.listen(PORT, () => {
     console.log(`API escuchando en http://localhost:${PORT}`);
   });

@@ -6,5 +6,7 @@ Sentry.init({
   dsn: process.env.SENTRY_DSN,
   environment: process.env.NODE_ENV || 'development',
   tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
-  includeLocalVariables: true,
+  // false: con true, un 500 en register/login mandaba a Sentry las variables locales,
+  // incluida la contraseña en texto plano.
+  includeLocalVariables: false,
 });
