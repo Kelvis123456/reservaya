@@ -84,6 +84,16 @@ body {
     opacity: 0;
     transform: translateY(100%);
   }
+
+  /* menús que nacen de su botón (campana): crecen desde esa esquina; cierran sin animación */
+  .menu-pop {
+    transform-origin: top right;
+    transition: opacity 150ms var(--ease-out), transform 150ms var(--ease-out);
+    @starting-style {
+      opacity: 0;
+      transform: scale(0.97);
+    }
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -92,7 +102,8 @@ body {
   }
   /* menos movimiento, no cero: se quedan los cambios de color y opacidad */
   .toast,
-  .toast[data-leaving] {
+  .toast[data-leaving],
+  .menu-pop {
     transform: none;
   }
   .motion-lift:hover,
