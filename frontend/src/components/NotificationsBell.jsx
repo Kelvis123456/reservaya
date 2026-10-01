@@ -6,6 +6,8 @@ export default function NotificationsBell() {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const ref = useRef(null);
+  const triggerRef = useRef(null);
+  const menuRef = useRef(null);
 
   async function load() {
     try {
@@ -30,6 +32,30 @@ export default function NotificationsBell() {
     return () => document.removeEventListener('mousedown', onClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (!open) return;
+    menuRef.current?.querySelector('[role="menuitem"]')?.focus();
+  }, [open]);
+
+  function closeAndRefocus() {
+    setOpen(false);
+    triggerRef.current?.focus();
+  }
+
+  function onMenuKeyDown(e) {
+    const items = Array.from(menuRef.current?.querySelectorAll('[role="menuitem"]') ?? []);
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      closeAndRefocus();
+      return;
+    }
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+    e.preventDefault();
+    const currentIndex = items.indexOf(document.activeElement);
+    const nextIndex = e.key === 'ArrowDown' ? currentIndex + 1 : currentIndex - 1;
+    items[Math.max(0, Math.min(nextIndex, items.length - 1))]?.focus();
+  }
+
   async function markRead(id) {
     await api.patch(`/notifications/${id}/read`);
     setNotifications((prev) => prev.map((n) => (n._id === id ? { ...n, read: true } : n)));
@@ -40,7 +66,10 @@ export default function NotificationsBell() {
   return (
     <div className="relative" ref={ref}>
       <button
+        ref={triggerRef}
         onClick={() => setOpen((v) => !v)}
+        aria-haspopup="menu"
+        aria-expanded={open}
         className="relative p-2 rounded-full hover:bg-slate-100 transition-colors"
       >
         <Bell className="size-5 text-slate-600" />
@@ -51,7 +80,12 @@ export default function NotificationsBell() {
         )}
       </button>
       {open && (
-        <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto card shadow-xl z-40">
+        <div
+          ref={menuRef}
+          role="menu"
+          onKeyDown={onMenuKeyDown}
+          className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto card shadow-xl z-40"
+        >
           <div className="px-4 py-3 border-b border-slate-100 font-semibold text-sm text-slate-700">
             Notificaciones
           </div>
@@ -61,6 +95,7 @@ export default function NotificationsBell() {
             notifications.map((n) => (
               <button
                 key={n._id}
+                role="menuitem"
                 onClick={() => markRead(n._id)}
                 className={`w-full text-left px-4 py-3 text-sm border-b border-slate-50 last:border-0 hover:bg-slate-50 ${
                   n.read ? 'text-slate-500' : 'text-slate-800 font-medium bg-brand-50/40'
