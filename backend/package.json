@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Backend de ReservaYa: API REST con PostgreSQL (datos relacionales) y MongoDB (datos flexibles)",
   "type": "module",
+  "engines": {
+    "node": "24.x"
+  },
   "main": "src/server.js",
   "scripts": {
     "dev": "nodemon src/server.js",
