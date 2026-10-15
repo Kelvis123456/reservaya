@@ -6,3 +6,4 @@ build/
 .env.test
 *.log
 .DS_Store
+.claude/
