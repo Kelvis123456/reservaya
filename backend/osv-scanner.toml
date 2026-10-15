@@ -1,0 +1,7 @@
+[[IgnoredVulns]]
+id = "GHSA-vfj7-8cjw-p6xm"
+reason = "braces 3.0.3 comes from nodemon via chokidar, dev-only, and no fixed version exists yet"
+
+[[IgnoredVulns]]
+id = "GHSA-w5hq-g745-h8pq"
+reason = "uuid 8.3.2 is internal to sequelize 6; the bug needs the buf argument, which our code never passes"
