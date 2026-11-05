@@ -1,29 +1,31 @@
+Español: [README.es.md](README.es.md)
+
 # ReservaYa
 
-Plataforma de reservas de canchas deportivas (fútbol, baloncesto, tenis, etc.). Los usuarios exploran canchas, ven su disponibilidad en tiempo real y reservan un horario; los dueños publican sus canchas, configuran horarios y gestionan reservas.
+Booking platform for sports courts (soccer, basketball, tennis, etc.). Users browse courts, see their availability in real time and book a time slot; owners publish their courts, set schedules and manage bookings.
 
-Proyecto académico que demuestra una **arquitectura híbrida de bases de datos**: PostgreSQL (SQL) y MongoDB (NoSQL) conviviendo en el mismo backend, cada una usada para el tipo de dato al que mejor se ajusta.
+It's an academic project that shows a **hybrid database architecture**: PostgreSQL (SQL) and MongoDB (NoSQL) living in the same backend, each used for the kind of data it fits best.
 
-## ¿Por qué dos motores de base de datos?
+## Why two database engines?
 
-| PostgreSQL (relacional) | MongoDB (documentos) |
+| PostgreSQL (relational) | MongoDB (documents) |
 |---|---|
-| `users` — cuentas de clientes y dueños | `reviews` — reseñas de canchas |
-| `venues` — canchas publicadas | `notifications` — notificaciones de eventos |
-| `schedules` — horario semanal de cada cancha | |
-| `reservations` — reservas de horarios | |
+| `users`: client and owner accounts | `reviews`: court reviews |
+| `venues`: published courts | `notifications`: event notifications |
+| `schedules`: weekly schedule of each court | |
+| `reservations`: time slot bookings | |
 
-**PostgreSQL** se usa para los datos con relaciones estrictas e integridad referencial: una reserva pertenece a un usuario y a una cancha, no puede haber dos reservas que se solapen, un horario pertenece a una cancha. Estas reglas se apoyan en llaves foráneas, transacciones y bloqueos de fila (evitar dobles reservas al reservar).
+**PostgreSQL** holds the data with strict relationships and referential integrity: a reservation belongs to a user and a court, two reservations can't overlap, a schedule belongs to a court. These rules rely on foreign keys, transactions and row locks (to avoid double bookings when reserving).
 
-**MongoDB** se usa para datos flexibles y de alto volumen de escritura que no necesitan una relación estricta: una reseña puede traer distintos campos según el caso (tags, respuesta del dueño, fotos a futuro) y las notificaciones tienen una forma distinta según el tipo de evento (`metadata` es de esquema libre). Ninguna de las dos colecciones necesita transacciones multi-tabla ni joins con otras tablas.
+**MongoDB** holds flexible, write-heavy data that doesn't need a strict relationship: a review can carry different fields depending on the case (tags, owner reply, photos in the future) and notifications have a different shape depending on the event type (`metadata` is schema-free). Neither collection needs multi-table transactions or joins with other tables.
 
 ## Stack
 
-- **Backend:** Node.js + Express, Sequelize (PostgreSQL) y Mongoose (MongoDB), autenticación JWT.
+- **Backend:** Node.js + Express, Sequelize (PostgreSQL) and Mongoose (MongoDB), JWT authentication.
 - **Frontend:** React + Vite + Tailwind CSS, React Router, Axios.
-- **Infraestructura:** Docker Compose para levantar PostgreSQL y MongoDB localmente.
+- **Infrastructure:** Docker Compose to run PostgreSQL and MongoDB locally.
 
-## Estructura del proyecto
+## Project structure
 
 ```
 ReservaYa/
@@ -42,15 +44,15 @@ ReservaYa/
 └── docker-compose.yml       # PostgreSQL + MongoDB
 ```
 
-## Cómo ejecutarlo localmente
+## Running it locally
 
-### 1. Levantar las bases de datos
+### 1. Start the databases
 
 ```bash
 docker compose up -d
 ```
 
-Esto levanta PostgreSQL en `localhost:5433` y MongoDB en `localhost:27017`.
+This starts PostgreSQL on `localhost:5433` and MongoDB on `localhost:27017`.
 
 ### 2. Backend
 
@@ -62,10 +64,10 @@ npm run seed   # crea usuarios, canchas y datos de ejemplo
 npm run dev    # http://localhost:4000
 ```
 
-Credenciales de prueba creadas por el seed:
+Test credentials created by the seed:
 
-- Dueño: `owner@reservaya.com` / `password123`
-- Cliente: `client@reservaya.com` / `password123`
+- Owner: `owner@reservaya.com` / `password123`
+- Client: `client@reservaya.com` / `password123`
 
 ### 3. Frontend
 
@@ -76,15 +78,15 @@ npm install
 npm run dev    # http://localhost:5173
 ```
 
-## Flujo principal
+## Main flow
 
-1. Un **dueño** se registra, publica una cancha y define su horario semanal.
-2. Un **cliente** explora canchas, filtra por deporte, ve la disponibilidad de horarios de un día específico y reserva un slot libre.
-3. El backend valida en una transacción de PostgreSQL que el horario no se solape con otra reserva activa antes de confirmarla.
-4. Al crear/confirmar/cancelar una reserva se genera una notificación en MongoDB para la otra parte.
-5. Tras una reserva confirmada, el cliente puede dejar una reseña (MongoDB) que se agrega al promedio de calificación de la cancha.
+1. An **owner** signs up, publishes a court and defines its weekly schedule.
+2. A **client** browses courts, filters by sport, sees the time slot availability for a specific day and books a free slot.
+3. The backend checks, in a PostgreSQL transaction, that the slot doesn't overlap another active reservation before confirming it.
+4. When a reservation is created, confirmed or cancelled, a notification is created in MongoDB for the other party.
+5. After a confirmed reservation, the client can leave a review (MongoDB) that is added to the court's average rating.
 
-## Pruebas automatizadas
+## Automated tests
 
 ```bash
 # Backend (requiere una base de datos de prueba, ver backend/.env.test)
@@ -96,38 +98,38 @@ cd frontend
 npm test        # 19 tests de componentes (Vitest + React Testing Library)
 ```
 
-Las pruebas de integración corren contra una base de datos Postgres/Mongo real (no mocks) y están pensadas para cubrir sobre todo los casos negativos: credenciales inválidas, roles sin permiso, recursos de otro usuario, reservas solapadas, etc. — no solo el camino feliz.
+The integration tests run against a real Postgres/Mongo database (no mocks) and are meant to cover mostly the negative cases: invalid credentials, roles without permission, another user's resources, overlapping reservations, etc., not just the happy path.
 
-## Despliegue en Render
+## Deploying on Render
 
-Demo en vivo: https://reservaya-frontend.onrender.com (el plan gratis duerme el API; la primera carga puede tardar hasta un minuto). Cuentas demo en la pantalla de login.
+Live demo: https://reservaya-frontend.onrender.com (the free plan puts the API to sleep; the first load can take up to a minute). Demo accounts are on the login screen.
 
-El repo trae un `render.yaml` (Blueprint) que crea tres recursos: la API (`reservaya-api`), la base de datos PostgreSQL administrada (`reservaya-db`) y el sitio estático del frontend (`reservaya-frontend`).
+The repo ships a `render.yaml` (Blueprint) that creates three resources: the API (`reservaya-api`), the managed PostgreSQL database (`reservaya-db`) and the frontend static site (`reservaya-frontend`).
 
-1. En el dashboard de Render: **New > Blueprint**, apunta al repo y aplica.
-2. MongoDB no tiene servicio administrado en Render — crea un cluster gratuito en [MongoDB Atlas](https://www.mongodb.com/atlas) y pega su connection string en la variable `MONGO_URL` del servicio `reservaya-api` (queda vacía por defecto, hay que completarla a mano en el dashboard).
-3. Los subdominios de Render son globales: si el nombre ya está tomado, Render le agrega un sufijo al servicio (el API de este repo quedó como `reservaya-api-6h48.onrender.com`; `reservaya-api.onrender.com` es de otra persona). Revisa la URL real de tus servicios y ajusta `VITE_API_URL` y `CORS_ORIGIN` en `render.yaml`.
-4. El frontend es una SPA con React Router (rutas como `/iniciar-sesion`, `/canchas/:id`) — el `render.yaml` incluye una regla de rewrite (`/* -> /index.html`) para que esas rutas no den 404 al recargar o entrar por link directo.
-5. Para tener los datos demo en producción, deja `SEED_DEMO_IF_EMPTY=true` en el API (ya viene en `render.yaml`): al arrancar, siembra canchas y cuentas de prueba solo si la base está vacía. `npm run seed` borra todas las tablas y por eso se niega a correr con `NODE_ENV=production`.
+1. In the Render dashboard: **New > Blueprint**, point it at the repo and apply.
+2. Render has no managed MongoDB service. Create a free cluster on [MongoDB Atlas](https://www.mongodb.com/atlas) and paste its connection string into the `MONGO_URL` variable of the `reservaya-api` service (it's empty by default, you have to fill it in by hand in the dashboard).
+3. Render subdomains are global: if the name is already taken, Render adds a suffix to the service (this repo's API ended up as `reservaya-api-6h48.onrender.com`; `reservaya-api.onrender.com` belongs to someone else). Check the real URL of your services and adjust `VITE_API_URL` and `CORS_ORIGIN` in `render.yaml`.
+4. The frontend is an SPA with React Router (routes like `/iniciar-sesion`, `/canchas/:id`). The `render.yaml` includes a rewrite rule (`/* -> /index.html`) so those routes don't return 404 on reload or when entering through a direct link.
+5. To have the demo data in production, leave `SEED_DEMO_IF_EMPTY=true` on the API (it's already in `render.yaml`): on startup, it seeds courts and test accounts only if the database is empty. `npm run seed` wipes all the tables, which is why it refuses to run with `NODE_ENV=production`.
 
-## API (resumen)
+## API (summary)
 
-| Método | Ruta | Descripción |
+| Method | Route | Description |
 |---|---|---|
-| POST | `/api/auth/register` / `/api/auth/login` | Registro e inicio de sesión |
-| GET | `/api/venues` | Listar canchas (filtros: `sportType`, `search`) |
-| GET | `/api/venues/:id/availability?date=` | Slots disponibles de un día |
-| POST | `/api/reservations` | Crear reserva (valida solapamiento) |
-| GET | `/api/reservations/me` | Reservas del usuario autenticado |
-| PATCH | `/api/reservations/:id/confirm` \| `/cancel` | Confirmar/cancelar reserva |
-| POST | `/api/reviews` | Dejar reseña (requiere reserva confirmada) |
-| GET | `/api/notifications/me` | Notificaciones del usuario |
+| POST | `/api/auth/register` / `/api/auth/login` | Sign up and log in |
+| GET | `/api/venues` | List courts (filters: `sportType`, `search`) |
+| GET | `/api/venues/:id/availability?date=` | Available slots for a day |
+| POST | `/api/reservations` | Create a reservation (checks for overlap) |
+| GET | `/api/reservations/me` | Authenticated user's reservations |
+| PATCH | `/api/reservations/:id/confirm` \| `/cancel` | Confirm/cancel a reservation |
+| POST | `/api/reviews` | Leave a review (requires a confirmed reservation) |
+| GET | `/api/notifications/me` | User's notifications |
 
-## Privacidad
+## Privacy
 
-Es un proyecto académico con cuentas de demostración, pero sí guarda datos reales si alguien se registra:
+It's an academic project with demo accounts, but it does store real data if someone signs up:
 
-- **Qué se guarda:** nombre, correo, rol y contraseña (solo el hash, nunca en texto plano) en PostgreSQL; reservas, reseñas y notificaciones asociadas a la cuenta.
-- **Para qué:** solo para que la app funcione (iniciar sesión, reservar, reseñar). No hay publicidad ni analítica de terceros.
-- **Quién más lo recibe:** Render aloja la API y la base de datos, MongoDB Atlas guarda reseñas y notificaciones, y Sentry recibe reportes de errores si `SENTRY_DSN` / `VITE_SENTRY_DSN` están configuradas (en el backend sin variables locales, para que una contraseña no viaje en un error).
-- **Borrar tus datos:** escríbeme a kelvisguerrero03@gmail.com y elimino la cuenta y sus datos. La demo en Render se puede reiniciar o borrar en cualquier momento, así que no uses un correo o una contraseña que te importen.
+- **What is stored:** name, email, role and password (only the hash, never plain text) in PostgreSQL; reservations, reviews and notifications tied to the account.
+- **What for:** only so the app works (logging in, booking, reviewing). There is no advertising or third-party analytics.
+- **Who else receives it:** Render hosts the API and the database, MongoDB Atlas stores reviews and notifications, and Sentry receives error reports if `SENTRY_DSN` / `VITE_SENTRY_DSN` are set (on the backend without local variables, so a password doesn't travel in an error).
+- **Deleting your data:** write to me at kelvisguerrero03@gmail.com and I'll delete the account and its data. The demo on Render can be reset or wiped at any time, so don't use an email or password you care about.
