@@ -5,3 +5,13 @@ reason = "braces 3.0.3 comes from nodemon via chokidar, dev-only, and no fixed v
 [[IgnoredVulns]]
 id = "GHSA-w5hq-g745-h8pq"
 reason = "uuid 8.3.2 is internal to sequelize 6; the bug needs the buf argument, which our code never passes"
+
+[[IgnoredVulns]]
+id = "GHSA-3g3m-2fjr-6pw4"
+ignoreUntil = 2026-12-15
+reason = "glob 13 llega por @sentry/bundler-plugins, que solo se usa en build; el fix es glob 14 (major) y Sentry aun no lo adopta"
+
+[[IgnoredVulns]]
+id = "GHSA-g3hv-75wg-m249"
+ignoreUntil = 2026-12-15
+reason = "minimatch 10 llega por nodemon (dev) y por glob de Sentry; el fix es minimatch 11 (major) y ninguno de los dos padres lo soporta aun"
